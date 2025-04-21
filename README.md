@@ -158,3 +158,8 @@ Yaygın hatalar ve çözümleri:
 ## Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın. 
+
+## Youtube video linki
+
+
+
