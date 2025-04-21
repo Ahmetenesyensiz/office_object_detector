@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ofis Nesneleri Tanıma</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #666;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #preview {
+            max-width: 100%;
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ofis Nesneleri Tanıma</h1>
+        <p>Bir ofis nesnesi görseli yükleyin ve modelin tahminini görün.</p>
+        
+        <div class="upload-area" id="dropZone">
+            <p>Görseli buraya sürükleyin veya tıklayarak seçin</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        
+        <img id="preview" alt="Önizleme">
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const result = document.getElementById('result');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarFill = document.getElementById('progressBarFill');
+
+        // Dosya sürükleme işlemleri
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#666';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#ccc';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#ccc';
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showResult('Lütfen bir görsel dosyası seçin', 'error');
+                return;
+            }
+
+            // Önizleme göster
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Dosyayı yükle
+            const formData = new FormData();
+            formData.append('file', file);
+
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '0%';
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showResult(data.error, 'error');
+                } else {
+                    let resultText = `<h3>Tahmin Sonuçları:</h3>`;
+                    resultText += `<p>Tahmin edilen sınıf: ${data.predicted_class}</p>`;
+                    resultText += `<p>Olasılık: ${(data.probability * 100).toFixed(2)}%</p>`;
+                    showResult(resultText, 'success');
+                }
+                progressBarFill.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressBarFill.style.width = '0%';
+                }, 1000);
+            })
+            .catch(error => {
+                showResult('Bir hata oluştu: ' + error, 'error');
+                progressBar.style.display = 'none';
+            });
+        }
+
+        function showResult(text, className) {
+            result.innerHTML = text;
+            result.className = className;
+        }
+    </script>
+</body>
+</html> 
