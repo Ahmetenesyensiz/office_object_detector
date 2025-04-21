@@ -119,6 +119,11 @@ python src/download_new_images.py
 python src/visualize_and_predict.py
 ```
 
+Arayüzde şu özellikler bulunmaktadır:
+- Rastgele görsel seçme ve tahmin yapma
+- Bilgisayardan görsel seçme ve tahmin yapma
+- Webcam ile gerçek zamanlı tahmin yapma
+
 ## Performans Metrikleri
 
 Model performansı aşağıdaki metriklerle değerlendirilir:

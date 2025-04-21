@@ -8,6 +8,7 @@ from custom_cnn import get_model
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import random
+import cv2
 
 # Sınıf isimlerini güncelle
 CLASS_NAMES = ['bardak', 'bilgisayar', 'canta', 'defter', 'fare', 'kalem', 'klavye', 'telefon']
@@ -122,6 +123,61 @@ def predict_selected_image():
     plt.tight_layout()
     plt.show()
 
+def predict_from_frame(frame):
+    """Webcam frame'inden tahmin yapar"""
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+
+    # OpenCV BGR formatından RGB'ye dönüştür
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(frame_rgb)
+    input_tensor = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        output = model(input_tensor)
+        probabilities = torch.nn.functional.softmax(output, dim=1)
+        predicted_class = torch.argmax(probabilities, dim=1).item()
+        confidence = probabilities[0][predicted_class].item()
+
+    return CLASS_NAMES[predicted_class], confidence
+
+def start_webcam():
+    """Webcam'i başlatır ve gerçek zamanlı tahmin yapar"""
+    cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        messagebox.showerror("Hata", "Webcam başlatılamadı!")
+        return
+
+    def update_frame():
+        ret, frame = cap.read()
+        if ret:
+            # Tahmin yap
+            predicted_class, confidence = predict_from_frame(frame)
+            
+            # Sonucu göster
+            result_text = f"Tahmin: {predicted_class}\n"
+            result_text += f"Güven: {confidence:.2%}"
+            result_label.config(text=result_text)
+
+            # Frame'i göster
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_resized = cv2.resize(frame_rgb, (200, 200))
+            img = Image.fromarray(frame_resized)
+            tk_img = ImageTk.PhotoImage(image=img)
+            image_panel.config(image=tk_img)
+            image_panel.image = tk_img
+            
+            # Her 100ms'de bir güncelle
+            root.after(100, update_frame)
+        else:
+            cap.release()
+
+    update_frame()
+
 # Ana pencere
 root = tk.Tk()
 root.title("Ofis Nesnesi Sınıflandırıcı")
@@ -136,6 +192,9 @@ btn_random.pack(side=tk.LEFT, padx=10)
 
 btn_select = ttk.Button(btn_frame, text="Görsel Seç", command=predict_selected_image)
 btn_select.pack(side=tk.LEFT, padx=10)
+
+btn_webcam = ttk.Button(btn_frame, text="Webcam Başlat", command=start_webcam)
+btn_webcam.pack(side=tk.LEFT, padx=10)
 
 # Sonuç etiketi
 result_label = ttk.Label(root, text="Henüz bir tahmin yapılmadı", font=("Helvetica", 12))
