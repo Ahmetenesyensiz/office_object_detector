@@ -161,5 +161,5 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## Youtube video linki
 
-
+[Video Linki](https://youtu.be/6DyRDI15gOs?si=gUlVeMF10vIr6_dm)  
 
